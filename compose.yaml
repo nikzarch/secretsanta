@@ -1,0 +1,19 @@
+services:
+  db:
+    image: postgres:17
+    env_file:
+      - .env
+    restart: always
+    environment:
+      POSTGRES_USER: ${DATASOURCE_USER_POSTGRES}
+      POSTGRES_PASSWORD: ${DATASOURCE_PASWORD_POSTGRES}
+      POSTGRES_DB: secret_santa
+    volumes:
+      - secret_santa_db-data:/var/lib/postgresql/data
+    expose:
+      - 5432
+    ports:
+      - "5432:5432"
+
+volumes:
+  secret_santa_db-data:

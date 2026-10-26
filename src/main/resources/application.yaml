@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: secretsanta
+  datasource:
+    main:
+      jdbc-url: {$DATASOURCE_URL_POSTGRES}
+      username: {$DATASOURCE_USER_POSTGRES}
+      password: {$DATASOURCE_PASSWORD_POSTGRES}
