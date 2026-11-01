@@ -10,10 +10,11 @@ class SecretSantaEvent(
     var description: String?,
     var date: LocalDate,
     var ownerId: UserId,
-    participants: Collection<UserId> = emptyList()
+    participants: Collection<UserId> = emptyList(),
+    santaAssignments: Collection<SantaAssignment> = emptySet()
 ) {
     private val participantsSet: MutableSet<UserId> = participants.toMutableSet()
-    private val santaAssignmentsSet: MutableSet<SantaAssignment> = mutableSetOf()
+    private val santaAssignmentsSet: MutableSet<SantaAssignment> = santaAssignments.toMutableSet()
 
     val participants: Set<UserId>
         get() = participantsSet.toSet()
