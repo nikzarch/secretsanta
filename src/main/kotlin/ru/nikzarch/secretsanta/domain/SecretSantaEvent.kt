@@ -1,55 +1,61 @@
 package ru.nikzarch.secretsanta.domain
 
+import ru.nikzarch.secretsanta.domain.vo.EventId
 import ru.nikzarch.secretsanta.domain.vo.UserId
 import java.time.LocalDate
 
 class SecretSantaEvent(
-    val id: Int,
-    val name: String,
-    val date: LocalDate,
-    val participants: MutableSet<UserId>,
+    val id: EventId? = null,
+    var name: String,
+    var description: String?,
+    var date: LocalDate,
+    var ownerId: UserId,
+    participants: Collection<UserId> = emptyList()
 ) {
-    var santaAssignments: MutableSet<SantaAssignment> = mutableSetOf()
-        private set
+    private val participantsSet: MutableSet<UserId> = participants.toMutableSet()
+    private val santaAssignmentsSet: MutableSet<SantaAssignment> = mutableSetOf()
+
+    val participants: Set<UserId>
+        get() = participantsSet.toSet()
+
+    val santaAssignments: Set<SantaAssignment>
+        get() = santaAssignmentsSet.toSet()
+
+    val expired: Boolean
+        get() = date.isBefore(LocalDate.now())
 
     init {
-        require(id > 0) { "id must be greater than zero." }
-        require(date.isBefore(LocalDate.now())) { "date must be before today: $date" }
+        require(name.isNotBlank()) { "name must not be blank" }
     }
 
-    var expired: Boolean = false
-        get() {
-            field = date.isAfter(LocalDate.now())
-            return field
-        }
-        private set
-
     fun addParticipant(userId: UserId) {
-        participants.add(userId)
+        if (participantsSet.add(userId)) invalidateAssignments()
+    }
+
+    fun addParticipants(users: Collection<UserId>) {
+        if (participantsSet.addAll(users)) invalidateAssignments()
     }
 
     fun removeParticipant(userId: UserId) {
-        participants.remove(userId)
+        if (participantsSet.remove(userId)) invalidateAssignments()
     }
 
     fun generateSantaAssignments() {
-        require(santaAssignments.isNotEmpty()) { "Assignments are already generated" }
-        require(participants.size > 2) { "Number of participants must be more than 2" }
+        require(santaAssignmentsSet.isEmpty()) { "assignments are already generated" }
+        require(participantsSet.size > 2) { "number of participants must be more than 2" }
 
-        val gifters = participants.shuffled()
-        val receivers = participants.shuffled()
-        val assignments: MutableSet<SantaAssignment> = mutableSetOf()
-        for (i in 1..gifters.size) {
-            if (gifters[i].equals(receivers[i])) {
-                generateSantaAssignments()
-                return
-            }
-            assignments.add(
-                SantaAssignment(gifters[i],receivers[i])
+        val shuffled = participantsSet.shuffled()
+        val generated = shuffled.mapIndexed { index, gifterId ->
+            SantaAssignment(
+                gifterId = gifterId,
+                receiverId = shuffled[(index + 1) % shuffled.size]
             )
         }
-        santaAssignments = assignments
+        santaAssignmentsSet.clear()
+        santaAssignmentsSet.addAll(generated)
     }
-    
-}
 
+    private fun invalidateAssignments() {
+        santaAssignmentsSet.clear()
+    }
+}

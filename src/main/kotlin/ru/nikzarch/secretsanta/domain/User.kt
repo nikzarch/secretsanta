@@ -1,7 +1,8 @@
 package ru.nikzarch.secretsanta.domain
 
+import ru.nikzarch.secretsanta.domain.vo.UserId
+
 class User(
-    val id: Int,
-    val username: String,
-    val passwordHash: String
+    val id: UserId? = null,
+    val username: String
 )
