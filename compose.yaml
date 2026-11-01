@@ -1,12 +1,12 @@
 services:
   db:
-    image: postgres:17
+    image: postgres:18
     env_file:
       - .env
     restart: always
     environment:
       POSTGRES_USER: ${DATASOURCE_USER_POSTGRES}
-      POSTGRES_PASSWORD: ${DATASOURCE_PASWORD_POSTGRES}
+      POSTGRES_PASSWORD: ${DATASOURCE_PASSWORD_POSTGRES}
       POSTGRES_DB: secret_santa
     volumes:
       - secret_santa_db-data:/var/lib/postgresql/data
