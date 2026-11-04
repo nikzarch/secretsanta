@@ -14,7 +14,7 @@ import ru.nikzarch.secretsanta.mapping.toDomain
 import ru.nikzarch.secretsanta.repository.EventRepository
 
 @Repository
-open class EventRepositoryImpl(
+class EventRepositoryImpl(
     private val create: DSLContext
 ) : EventRepository {
 
@@ -27,7 +27,9 @@ open class EventRepositoryImpl(
         val id = create.insertInto(SECRET_SANTA_EVENTS)
             .set(SECRET_SANTA_EVENTS.NAME, event.name)
             .set(SECRET_SANTA_EVENTS.DESCRIPTION, event.description)
-            .set(SECRET_SANTA_EVENTS.EVENT_DATE, event.date).returningResult(SECRET_SANTA_EVENTS.ID).fetchSingle()
+            .set(SECRET_SANTA_EVENTS.EVENT_DATE, event.date)
+            .set(SECRET_SANTA_EVENTS.OWNER_ID, event.ownerId.value)
+            .returningResult(SECRET_SANTA_EVENTS.ID).fetchSingle()
             .value1()
         return SecretSantaEvent(
             id = EventId(id),
@@ -46,6 +48,7 @@ open class EventRepositoryImpl(
                 .set(SECRET_SANTA_EVENTS.NAME, event.name)
                 .set(SECRET_SANTA_EVENTS.DESCRIPTION, event.description)
                 .set(SECRET_SANTA_EVENTS.EVENT_DATE, event.date)
+                .set(SECRET_SANTA_EVENTS.OWNER_ID, event.ownerId.value)
                 .where(SECRET_SANTA_EVENTS.ID.eq(event.id!!.value))
                 .execute() != 1
         )
@@ -86,7 +89,7 @@ open class EventRepositoryImpl(
         return record.toDomain(participants, assignments)
     }
 
-    override fun deleteById(id: EventId) = create.deleteFrom(SECRET_SANTA_EVENTS)
+    override fun deleteById(id: EventId): Boolean = create.deleteFrom(SECRET_SANTA_EVENTS)
         .where(SECRET_SANTA_EVENTS.ID.eq(id.value)).execute() == 1
 
 

@@ -17,7 +17,7 @@ fun CreateEventRequest.toDomain(id: EventId) =
         ownerId = ownerId
     )
 
-fun UpdateEventRequest.toDomain(event: SecretSantaEvent) {
+fun UpdateEventRequest.toDomain(event: SecretSantaEvent) =
     SecretSantaEvent(
         id = event.id,
         name = name ?: event.name,
@@ -25,7 +25,7 @@ fun UpdateEventRequest.toDomain(event: SecretSantaEvent) {
         date = date ?: event.date,
         ownerId = ownerId ?: event.ownerId,
     )
-}
+
 
 fun SecretSantaEventsRecord.toDomain(
     participants: Collection<UserId> = emptyList(),
