@@ -8,6 +8,13 @@ value class UserId(val value: Int) {
 }
 
 @JvmInline
+value class TelegramId(val value: Long) {
+    init {
+        require(value > 0) { "TelegramId must be positive" }
+    }
+}
+
+@JvmInline
 value class EventId(val value: Int) {
     init {
         require(value > 0) { "eventId must be positive" }

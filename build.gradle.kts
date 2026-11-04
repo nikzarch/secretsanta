@@ -65,11 +65,15 @@ fun env(name: String): String? = System.getenv(name) ?: dotenv[name]
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-jooq")
+
     implementation("org.springframework.boot:spring-boot-starter-kafka")
-    implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
+
+    implementation("org.springframework.boot:spring-boot-starter-jooq")
     implementation("org.springframework.boot:spring-boot-starter-liquibase")
+
+//    implementation("org.springframework.boot:spring-boot-starter-security")
+//    implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
 
 
     developmentOnly("me.paulschwarz:springboot4-dotenv:5.1.0")
@@ -77,14 +81,15 @@ dependencies {
 
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("tools.jackson.module:jackson-module-kotlin")
-    runtimeOnly("org.postgresql:postgresql")
 
+    runtimeOnly("org.postgresql:postgresql")
     jooqCodegen("org.postgresql:postgresql")
+    liquibaseRuntime("org.postgresql:postgresql")
 
     liquibaseRuntime("org.liquibase:liquibase-core:4.33.0")
-    liquibaseRuntime("org.postgresql:postgresql")
     liquibaseRuntime("info.picocli:picocli:4.7.7")
-    liquibaseRuntime("org.yaml:snakeyaml:1.33")
+    liquibaseRuntime("org.yaml:snakeyaml:2.0")
+
     testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
     testImplementation("org.springframework.boot:spring-boot-starter-jooq-test")
     testImplementation("org.springframework.boot:spring-boot-starter-kafka-test")
