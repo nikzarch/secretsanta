@@ -6,7 +6,7 @@ import ru.nikzarch.secretsanta.domain.vo.UserId
 import ru.nikzarch.secretsanta.jooq.generated.tables.records.UsersRecord
 import ru.nikzarch.secretsanta.repository.Credentials
 
-fun UsersRecord.toDomain() = User(UserId(id), username)
+fun UsersRecord.toDomain() = User(UserId(id), username, telegramId?.let(::TelegramId))
 
 fun UsersRecord.toCredentials() = Credentials(username, password)
 

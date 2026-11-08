@@ -13,36 +13,24 @@ import ru.nikzarch.secretsanta.repository.UserRepository
 class UserRepositoryImpl(
     private val create: DSLContext,
 ) : UserRepository {
-
-    override fun save(user: User): User {
-        return if (user.id == null) insert(user) else update(user)
-    }
+    override fun save(user: User): User =
+        if (user.id == null) insert(user) else update(user)
 
     private fun insert(user: User): User {
-        val query = create.insertInto(USERS)
+        val id = create.insertInto(USERS)
             .set(USERS.USERNAME, user.username)
-            .apply {
-                user.telegramId?.let {
-                    set(USERS.TELEGRAM_ID, user.telegramId.value)
-                }
-            }
-
-        val id = query.returningResult(USERS.ID)
+            .set(USERS.TELEGRAM_ID, user.telegramId?.value)
+            .returningResult(USERS.ID)
             .fetchSingle().value1()
-
         return User(UserId(id), user.username, user.telegramId)
     }
 
     private fun update(user: User): User {
-        create.update(USERS)
+        check(create.update(USERS)
             .set(USERS.USERNAME, user.username)
-            .apply {
-                user.telegramId?.let {
-                    set(USERS.TELEGRAM_ID, it.value)
-                }
-            }
+            .set(USERS.TELEGRAM_ID, user.telegramId?.value)
             .where(USERS.ID.eq(requireNotNull(user.id).value))
-            .execute()
+            .execute() == 1) { "user not found" }
         return user
     }
 
