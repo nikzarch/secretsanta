@@ -22,7 +22,10 @@ class SecretSantaEvent(
     val santaAssignments: Set<SantaAssignment>
         get() = santaAssignmentsSet.toSet()
 
-    val expired: Boolean
+    var deactivated: Boolean = false
+        get() = field || expired
+
+    private val expired: Boolean
         get() = date.isBefore(LocalDate.now())
 
     init {
@@ -30,15 +33,18 @@ class SecretSantaEvent(
     }
 
     fun addParticipant(userId: UserId) {
-        if (participantsSet.add(userId)) invalidateAssignments()
+        check(!areAssignmentsGenerated()) { "event already has assigments with current participants" }
+        participantsSet.add(userId)
     }
 
     fun addParticipants(users: Collection<UserId>) {
-        if (participantsSet.addAll(users)) invalidateAssignments()
+        check(!areAssignmentsGenerated()) { "event already has assigments with current participants" }
+        participantsSet.addAll(users)
     }
 
     fun removeParticipant(userId: UserId) {
-        if (participantsSet.remove(userId)) invalidateAssignments()
+        check(!areAssignmentsGenerated()) { "event already has assigments with current participants" }
+        participantsSet.remove(userId)
     }
 
     fun generateSantaAssignments() {
@@ -55,6 +61,14 @@ class SecretSantaEvent(
         santaAssignmentsSet.clear()
         santaAssignmentsSet.addAll(generated)
     }
+
+    fun deactivate() {
+        deactivated = true
+    }
+
+    fun isActive() = !deactivated
+
+    fun areAssignmentsGenerated() = santaAssignmentsSet.isNotEmpty()
 
     private fun invalidateAssignments() {
         santaAssignmentsSet.clear()

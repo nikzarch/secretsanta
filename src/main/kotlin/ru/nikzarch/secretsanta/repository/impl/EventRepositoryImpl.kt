@@ -53,20 +53,24 @@ class EventRepositoryImpl(
                 .execute() != 1
         )
             throw IllegalArgumentException("Event with ${event.id} doesn't exist")
-        create.deleteFrom(SANTA_ASSIGNMENTS)
-            .where(SANTA_ASSIGNMENTS.EVENT_ID.eq(event.id.value)).execute()
-        create.deleteFrom(EVENT_PARTICIPANTS)
-            .where(EVENT_PARTICIPANTS.EVENT_ID.eq(event.id.value)).execute()
+
         event.participants.forEach {
             create.insertInto(EVENT_PARTICIPANTS)
                 .set(EVENT_PARTICIPANTS.EVENT_ID, event.id.value)
                 .set(EVENT_PARTICIPANTS.USER_ID, it.value).execute()
         }
-        event.santaAssignments.forEach {
-            create.insertInto(SANTA_ASSIGNMENTS)
-                .set(SANTA_ASSIGNMENTS.EVENT_ID, event.id.value)
-                .set(SANTA_ASSIGNMENTS.GIFTER_ID, it.gifterId.value)
-                .set(SANTA_ASSIGNMENTS.RECEIVER_ID, it.receiverId.value).execute()
+
+        val existing = loadAssignments(event.id).toSet()
+        if (existing != event.santaAssignments) {
+            create.deleteFrom(SANTA_ASSIGNMENTS)
+                .where(SANTA_ASSIGNMENTS.EVENT_ID.eq(event.id.value)).execute()
+            event.santaAssignments.forEach {
+                create.insertInto(SANTA_ASSIGNMENTS)
+                    .set(SANTA_ASSIGNMENTS.EVENT_ID, event.id.value)
+                    .set(SANTA_ASSIGNMENTS.GIFTER_ID, it.gifterId.value)
+                    .set(SANTA_ASSIGNMENTS.RECEIVER_ID, it.receiverId.value)
+                    .execute()
+            }
         }
         return event
     }
@@ -89,8 +93,9 @@ class EventRepositoryImpl(
         return record.toDomain(participants, assignments)
     }
 
-    override fun deleteById(id: EventId): Boolean = create.deleteFrom(SECRET_SANTA_EVENTS)
-        .where(SECRET_SANTA_EVENTS.ID.eq(id.value)).execute() == 1
+    override fun deleteById(id: EventId): Boolean =
+        create.deleteFrom(SECRET_SANTA_EVENTS)
+            .where(SECRET_SANTA_EVENTS.ID.eq(id.value)).execute() == 1
 
 
     override fun countAll(): Int = create.selectFrom(SECRET_SANTA_EVENTS).count()
@@ -101,5 +106,12 @@ class EventRepositoryImpl(
             .fetch()
             .map(SecretSantaEventsRecord::toDomain)
     }
+
+    private fun loadAssignments(id: EventId): List<SantaAssignment> =
+        create.select(SANTA_ASSIGNMENTS.GIFTER_ID, SANTA_ASSIGNMENTS.RECEIVER_ID)
+            .from(SANTA_ASSIGNMENTS)
+            .where(SANTA_ASSIGNMENTS.EVENT_ID.eq(id.value))
+            .fetch { SantaAssignment(UserId(it.value1()), UserId(it.value2())) }
+
 
 }

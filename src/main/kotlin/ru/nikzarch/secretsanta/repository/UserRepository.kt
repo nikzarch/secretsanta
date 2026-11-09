@@ -11,8 +11,3 @@ interface UserRepository {
     fun findByTelegramId(telegramId: TelegramId): User?
 }
 
-data class CreateUserRequest(
-    val username: String,
-    val password: String,
-    val telegramId: TelegramId?
-)

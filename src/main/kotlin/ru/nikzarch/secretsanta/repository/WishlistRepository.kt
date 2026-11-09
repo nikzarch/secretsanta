@@ -5,7 +5,7 @@ import ru.nikzarch.secretsanta.domain.WishlistItem
 import ru.nikzarch.secretsanta.domain.vo.*
 
 interface WishlistRepository {
-    fun addItem(wishlistId: WishlistId, item: WishlistItem): Boolean
+    fun addItem(wishlistId: WishlistId, item: WishlistItem): WishlistItem
     fun findById(id: WishlistId): Wishlist?
     fun findByOwnerId(ownerId: UserId): Wishlist?
     fun save(wishlist: Wishlist): Wishlist

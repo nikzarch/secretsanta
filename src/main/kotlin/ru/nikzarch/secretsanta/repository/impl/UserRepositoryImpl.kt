@@ -26,11 +26,13 @@ class UserRepositoryImpl(
     }
 
     private fun update(user: User): User {
-        check(create.update(USERS)
-            .set(USERS.USERNAME, user.username)
-            .set(USERS.TELEGRAM_ID, user.telegramId?.value)
-            .where(USERS.ID.eq(requireNotNull(user.id).value))
-            .execute() == 1) { "user not found" }
+        check(
+            create.update(USERS)
+                .set(USERS.USERNAME, user.username)
+                .set(USERS.TELEGRAM_ID, user.telegramId?.value)
+                .where(USERS.ID.eq(requireNotNull(user.id).value))
+                .execute() == 1
+        ) { "user not found" }
         return user
     }
 

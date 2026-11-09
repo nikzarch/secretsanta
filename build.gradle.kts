@@ -72,9 +72,10 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-jooq")
     implementation("org.springframework.boot:spring-boot-starter-liquibase")
 
-//    implementation("org.springframework.boot:spring-boot-starter-security")
-//    implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
 
+    implementation("jakarta.validation:jakarta.validation-api:3.0.2")
 
     developmentOnly("me.paulschwarz:springboot4-dotenv:5.1.0")
 

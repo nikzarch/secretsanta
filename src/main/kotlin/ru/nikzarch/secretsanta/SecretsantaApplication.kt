@@ -7,5 +7,5 @@ import org.springframework.boot.runApplication
 class SecretsantaApplication
 
 fun main(args: Array<String>) {
-	runApplication<SecretsantaApplication>(*args)
+    runApplication<SecretsantaApplication>(*args)
 }
