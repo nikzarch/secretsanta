@@ -12,11 +12,16 @@ import ru.nikzarch.secretsanta.repository.CredentialsRepository
 class CredentialsRepositoryImpl(
     private val create: DSLContext
 ) : CredentialsRepository {
-    override fun findByUsername(username: String): Credentials? {
-        return create.selectFrom(USERS)
+    override fun findByUsername(username: String): Credentials? =
+        create.selectFrom(USERS)
             .where(USERS.USERNAME.eq(username))
             .fetchOne()?.toCredentials()
-    }
+
+    override fun findById(userId: UserId): Credentials? =
+        create.selectFrom(USERS)
+            .where(USERS.ID.eq(userId.value))
+            .fetchOne()?.toCredentials()
+
 
     override fun setPassword(
         userId: UserId,

@@ -5,11 +5,17 @@ import ru.nikzarch.secretsanta.domain.vo.TelegramId
 import ru.nikzarch.secretsanta.domain.vo.UserId
 import ru.nikzarch.secretsanta.jooq.generated.tables.records.UsersRecord
 import ru.nikzarch.secretsanta.repository.Credentials
+import ru.nikzarch.secretsanta.service.LoginUserRequest
 import ru.nikzarch.secretsanta.service.RegisterUserRequest
+
 
 fun UsersRecord.toDomain() = User(UserId(id), username, telegramId?.let(::TelegramId))
 
 fun UsersRecord.toCredentials() = Credentials(username, password)
+
+fun RegisterUserRequest.toDomain() = User(username = username.trim().lowercase())
+
+fun LoginUserRequest.toDomain() = User(username = username.trim().lowercase())
 
 fun User.toSpringUser(password: String) =
     org.springframework.security.core.userdetails.User(username, password, emptyList())
@@ -19,5 +25,3 @@ fun org.springframework.security.core.userdetails.User.toDomain(id: UserId, tele
     username = username,
     telegramId = telegramId
 )
-
-fun RegisterUserRequest.toDomain() = User(null, username, telegramId)

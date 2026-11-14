@@ -74,6 +74,8 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
+    implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
 
     implementation("jakarta.validation:jakarta.validation-api:3.0.2")
 

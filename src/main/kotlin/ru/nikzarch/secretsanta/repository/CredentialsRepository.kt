@@ -5,6 +5,7 @@ import ru.nikzarch.secretsanta.domain.vo.UserId
 
 interface CredentialsRepository {
     fun findByUsername(username: String): Credentials?
+    fun findById(userId: UserId): Credentials?
     fun setPassword(
         userId: UserId,
         passwordHash: String,

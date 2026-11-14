@@ -1,9 +1,12 @@
 package ru.nikzarch.secretsanta.mapping
 
-import ru.nikzarch.secretsanta.domain.*
-import ru.nikzarch.secretsanta.domain.vo.*
-import ru.nikzarch.secretsanta.jooq.generated.tables.records.WishlistsRecord
+import ru.nikzarch.secretsanta.domain.Wishlist
+import ru.nikzarch.secretsanta.domain.WishlistItem
+import ru.nikzarch.secretsanta.domain.vo.UserId
+import ru.nikzarch.secretsanta.domain.vo.WishlistId
+import ru.nikzarch.secretsanta.domain.vo.WishlistItemId
 import ru.nikzarch.secretsanta.jooq.generated.tables.records.WishlistItemsRecord
+import ru.nikzarch.secretsanta.jooq.generated.tables.records.WishlistsRecord
 import ru.nikzarch.secretsanta.service.AddWishlistItemRequest
 
 fun WishlistItemsRecord.toDomain() = WishlistItem(

@@ -9,12 +9,13 @@ class SecretSantaEvent(
     var name: String,
     var description: String?,
     var date: LocalDate,
-    var ownerId: UserId,
+    val ownerId: UserId,
     participants: Collection<UserId> = emptyList(),
-    santaAssignments: Collection<SantaAssignment> = emptySet()
+    santaAssignments: Collection<SantaAssignment> = emptySet(),
+    active: Boolean = true,
 ) {
-    private val participantsSet: MutableSet<UserId> = participants.toMutableSet()
-    private val santaAssignmentsSet: MutableSet<SantaAssignment> = santaAssignments.toMutableSet()
+    private val participantsSet = participants.toMutableSet()
+    private val santaAssignmentsSet = santaAssignments.toMutableSet()
 
     val participants: Set<UserId>
         get() = participantsSet.toSet()
@@ -22,51 +23,47 @@ class SecretSantaEvent(
     val santaAssignments: Set<SantaAssignment>
         get() = santaAssignmentsSet.toSet()
 
-    var deactivated: Boolean = false
-        get() = field || expired
-
-    private val expired: Boolean
-        get() = date.isBefore(LocalDate.now())
+    var active = active
+        private set
 
     init {
         require(name.isNotBlank()) { "name must not be blank" }
     }
 
     fun addParticipant(userId: UserId) {
-        check(!areAssignmentsGenerated()) { "event already has assigments with current participants" }
+        check(isActive()) { "event is not active" }
+        check(!areAssignmentsGenerated()) { "assignments are already generated" }
         participantsSet.add(userId)
     }
 
     fun addParticipants(users: Collection<UserId>) {
-        check(!areAssignmentsGenerated()) { "event already has assigments with current participants" }
+        check(isActive()) { "event is not active" }
+        check(!areAssignmentsGenerated()) { "assignments are already generated" }
         participantsSet.addAll(users)
     }
 
     fun removeParticipant(userId: UserId) {
-        check(!areAssignmentsGenerated()) { "event already has assigments with current participants" }
+        check(!areAssignmentsGenerated()) { "assignments are already generated" }
         participantsSet.remove(userId)
     }
 
     fun generateSantaAssignments() {
-        require(santaAssignmentsSet.isEmpty()) { "assignments are already generated" }
+        check(isActive()) { "event is not active" }
+        check(santaAssignmentsSet.isEmpty()) { "assignments are already generated" }
         require(participantsSet.size > 2) { "number of participants must be more than 2" }
 
         val shuffled = participantsSet.shuffled()
         val generated = shuffled.mapIndexed { index, gifterId ->
-            SantaAssignment(
-                gifterId = gifterId,
-                receiverId = shuffled[(index + 1) % shuffled.size]
-            )
+            SantaAssignment(gifterId, shuffled[(index + 1) % shuffled.size])
         }
-        santaAssignmentsSet.clear()
         santaAssignmentsSet.addAll(generated)
     }
 
     fun deactivate() {
-        deactivated = true
+        active = false
     }
 
-    fun isActive() = !deactivated
+    fun isActive() = active && !date.isBefore(LocalDate.now())
 
     fun areAssignmentsGenerated() = santaAssignmentsSet.isNotEmpty()
 

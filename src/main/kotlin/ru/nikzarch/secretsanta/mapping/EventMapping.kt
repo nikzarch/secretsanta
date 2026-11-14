@@ -23,7 +23,7 @@ fun UpdateEventRequest.toDomain(event: SecretSantaEvent) =
         name = name ?: event.name,
         description = description ?: event.description,
         date = date ?: event.date,
-        ownerId = ownerId ?: event.ownerId,
+        ownerId = event.ownerId
     )
 
 
@@ -31,6 +31,15 @@ fun SecretSantaEventsRecord.toDomain(
     participants: Collection<UserId> = emptyList(),
     assignments: Collection<SantaAssignment> = emptyList()
 ) = SecretSantaEvent(
-    EventId(requireNotNull(id)), requireNotNull(name), description,
-    requireNotNull(eventDate), UserId(requireNotNull(ownerId)), participants, assignments
+    id = EventId(requireNotNull(id)),
+    name = requireNotNull(name),
+    description = description,
+    date = requireNotNull(eventDate),
+    ownerId = UserId(requireNotNull(ownerId)),
+    participants = participants,
+    santaAssignments = assignments,
+    active = requireNotNull(active),
 )
+
+
+

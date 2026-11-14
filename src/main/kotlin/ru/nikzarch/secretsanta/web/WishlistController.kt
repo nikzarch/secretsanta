@@ -1,36 +1,62 @@
 package ru.nikzarch.secretsanta.web
 
-import jakarta.validation.constraints.Positive
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
+import org.springframework.http.HttpStatus
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.web.bind.annotation.*
+import ru.nikzarch.secretsanta.domain.Wishlist
 import ru.nikzarch.secretsanta.domain.WishlistItem
-import ru.nikzarch.secretsanta.domain.vo.UserId
+import ru.nikzarch.secretsanta.domain.vo.WishlistItemId
+import ru.nikzarch.secretsanta.service.AddWishlistItemRequest
 import ru.nikzarch.secretsanta.service.WishlistService
 
-
+@Tag(name = "Вишлист")
 @RestController
-@RequestMapping("/api/v1")
-class WishlistController(
-    private val wishlistService: WishlistService
-) {
+@RequestMapping("/api/v1/me/wishlist")
+class WishlistController(private val wishlistService: WishlistService) {
 
-    @GetMapping("/user/{id}/wishlist")
-    fun getWishlistForUser(@PathVariable(name = "id") @Positive id: Int): GetWishlistResponseDto {
-        val items = wishlistService.findByUserId(UserId(id))?.items?.map(WishlistItemDto::fromServiceResponse)
-        if (!items.isNullOrEmpty()) {
-            return GetWishlistResponseDto(items)
-        }
-        return GetWishlistResponseDto(emptyList())
+    @GetMapping
+    @Operation(summary = "Мой вишлист")
+    fun get(@AuthenticationPrincipal jwt: Jwt): GetWishlistResponseDto =
+        GetWishlistResponseDto.fromDomain(wishlistService.findByUserId(jwt.userId()))
+
+    @PostMapping("/items")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun add(@RequestBody request: WishlistItemRequestDto, @AuthenticationPrincipal jwt: Jwt): WishlistItemDto =
+        WishlistItemDto.fromDomain(wishlistService.addItemToWishlist(request.toServiceRequest(), jwt.userId()))
+
+    @PutMapping("/items/{itemId}")
+    fun update(
+        @PathVariable itemId: Int,
+        @RequestBody request: WishlistItemRequestDto,
+        @AuthenticationPrincipal jwt: Jwt
+    ): WishlistItemDto =
+        WishlistItemDto.fromDomain(
+            wishlistService.updateItem(
+                WishlistItemId(itemId), request.toServiceRequest(), jwt.userId()
+            )
+        )
+
+    @DeleteMapping("/items/{itemId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun delete(@PathVariable itemId: Int, @AuthenticationPrincipal jwt: Jwt) {
+        wishlistService.removeItem(WishlistItemId(itemId), jwt.userId())
     }
-
-
 }
 
-data class GetWishlistResponseDto(
-    val items: List<WishlistItemDto>
-)
+data class WishlistItemRequestDto(val name: String, val description: String? = null, val link: String? = null) {
+    fun toServiceRequest() = AddWishlistItemRequest(name, description, link)
+}
+
+data class GetWishlistResponseDto(val items: List<WishlistItemDto>) {
+    companion object {
+        fun fromDomain(wishlist: Wishlist?) = GetWishlistResponseDto(
+            wishlist?.items?.map(WishlistItemDto::fromDomain) ?: emptyList()
+        )
+    }
+}
 
 data class WishlistItemDto(
     val id: Int,
@@ -39,12 +65,7 @@ data class WishlistItemDto(
     val link: String?,
 ) {
     companion object {
-        fun fromServiceResponse(item: WishlistItem) = WishlistItemDto(
-            item.id!!.value,
-            item.name,
-            item.description,
-            item.link
-        )
+        fun fromDomain(item: WishlistItem) =
+            WishlistItemDto(requireNotNull(item.id).value, item.name, item.description, item.link)
     }
-
 }

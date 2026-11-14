@@ -22,6 +22,8 @@ class JwtServiceImpl(
 
         val claims = JwtClaimsSet.builder()
             .subject(requireNotNull(user.id).value.toString())
+            .issuer("secretsanta")
+            .audience(listOf("secretsanta-api"))
             .issuedAt(now)
             .expiresAt(now.plus(1, ChronoUnit.HOURS))
             .build()

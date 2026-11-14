@@ -6,7 +6,7 @@ spring:
     username: ${DATASOURCE_USER_POSTGRES}
     password: ${DATASOURCE_PASSWORD_POSTGRES}
   liquibase:
-    enabled: true
+    enabled: false
     change-log: classpath:db/changelog/db.changelog-master.yaml
 
 
@@ -15,3 +15,11 @@ app:
     secret: ${JWT_SECRET}
     issuer: nikzarch-secret-santa-backend
     ttl-minutes: 30
+  registration:
+    admin-key: ${REGISTRATION_ADMIN_KEY}
+    invitation-hours: 24
+
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

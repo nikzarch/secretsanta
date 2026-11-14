@@ -10,25 +10,18 @@ interface UserService {
     fun loginWeb(request: LoginUserRequest): AuthUserResponse
     fun findByUserId(userId: UserId): User?
     fun findByUsername(username: String): User?
-    fun registerTelegram(
-        telegramId: TelegramId,
-        telegramUsername: String?,
-    ): User
-
+    fun registerTelegram(telegramId: TelegramId, telegramUsername: String?): User
+    fun changePassword(request: ChangePasswordRequest)
 }
 
 data class RegisterUserRequest(
     val username: String,
     val password: String,
-    val telegramId: TelegramId?
+    val invitationToken: String,
 )
 
-data class AuthUserResponse(
-    val user: User,
-    val token: JwtToken
-)
+data class AuthUserResponse(val user: User, val token: JwtToken)
 
-data class LoginUserRequest(
-    val username: String,
-    val password: String
-)
+data class LoginUserRequest(val username: String, val password: String)
+
+data class ChangePasswordRequest(val userId: UserId, val oldPassword: String, val newPassword: String)

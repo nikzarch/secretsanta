@@ -10,142 +10,96 @@ import ru.nikzarch.secretsanta.domain.vo.WishlistId
 import ru.nikzarch.secretsanta.domain.vo.WishlistItemId
 import ru.nikzarch.secretsanta.jooq.generated.tables.WishlistItems.WISHLIST_ITEMS
 import ru.nikzarch.secretsanta.jooq.generated.tables.Wishlists.WISHLISTS
-import ru.nikzarch.secretsanta.jooq.generated.tables.records.WishlistItemsRecord
 import ru.nikzarch.secretsanta.mapping.toDomain
 import ru.nikzarch.secretsanta.repository.WishlistRepository
 
 @Repository
-class WishlistRepositoryImpl(
-    private val create: DSLContext
-) : WishlistRepository {
+class WishlistRepositoryImpl(private val create: DSLContext) : WishlistRepository {
 
-    override fun addItem(
-        wishlistId: WishlistId,
-        item: WishlistItem
-    ): WishlistItem {
-        require(findById(wishlistId) != null) { "wishlist not found" }
+    override fun addItem(wishlistId: WishlistId, item: WishlistItem): WishlistItem {
         val id = create.insertInto(WISHLIST_ITEMS)
             .set(WISHLIST_ITEMS.WISHLIST_ID, wishlistId.value)
             .set(WISHLIST_ITEMS.NAME, item.name)
             .set(WISHLIST_ITEMS.DESCRIPTION, item.description)
             .set(WISHLIST_ITEMS.LINK, item.link)
             .returningResult(WISHLIST_ITEMS.ID)
-            .fetchSingle()
-            .value1()
-        return WishlistItem(
-            WishlistItemId(id),
-            item.name,
-            item.description,
-            item.link
-        )
+            .fetchSingle().value1()
+        return WishlistItem(WishlistItemId(id), item.name, item.description, item.link)
     }
 
+    override fun updateItem(wishlistId: WishlistId, item: WishlistItem): WishlistItem {
+        val itemId = requireNotNull(item.id)
+        check(
+            create.update(WISHLIST_ITEMS)
+                .set(WISHLIST_ITEMS.NAME, item.name)
+                .set(WISHLIST_ITEMS.DESCRIPTION, item.description)
+                .set(WISHLIST_ITEMS.LINK, item.link)
+                .where(WISHLIST_ITEMS.ID.eq(itemId.value))
+                .and(WISHLIST_ITEMS.WISHLIST_ID.eq(wishlistId.value))
+                .execute() == 1
+        ) { "wishlist item not found" }
+        return item
+    }
 
-    override fun findById(id: WishlistId): Wishlist? {
-        val wishlistRecord = create.selectFrom(WISHLISTS)
+    override fun deleteItem(wishlistId: WishlistId, itemId: WishlistItemId): Boolean =
+        create.deleteFrom(WISHLIST_ITEMS)
+            .where(WISHLIST_ITEMS.ID.eq(itemId.value))
+            .and(WISHLIST_ITEMS.WISHLIST_ID.eq(wishlistId.value))
+            .execute() == 1
+
+    override fun findById(id: WishlistId): Wishlist? =
+        create.selectFrom(WISHLISTS)
             .where(WISHLISTS.ID.eq(id.value))
-            .fetchOne() ?: return null
-        val wishlistItems =
-            create.selectFrom(WISHLIST_ITEMS)
-                .where(WISHLIST_ITEMS.WISHLIST_ID.eq(id.value))
-                .fetch(WishlistItemsRecord::toDomain)
-        return wishlistRecord.toDomain(wishlistItems)
-    }
+            .fetchOne()?.let { it.toDomain(getItems(id)) }
 
-
-    override fun findByOwnerId(ownerId: UserId): Wishlist? {
-        val wishlistRecord = create.selectFrom(WISHLISTS)
+    override fun findByOwnerId(ownerId: UserId): Wishlist? =
+        create.selectFrom(WISHLISTS)
             .where(WISHLISTS.OWNER_ID.eq(ownerId.value))
-            .fetchOne() ?: return null
-        val wishlistItems =
-            create.selectFrom(WISHLIST_ITEMS)
-                .where(WISHLIST_ITEMS.WISHLIST_ID.eq(wishlistRecord.id))
-                .fetch(WishlistItemsRecord::toDomain)
-        return wishlistRecord?.toDomain(wishlistItems)
-    }
+            .fetchOne()?.let { record ->
+                record.toDomain(getItems(WishlistId(requireNotNull(record.id))))
+            }
 
     @Transactional
-    override fun save(wishlist: Wishlist): Wishlist {
-        return if (wishlist.id == null) insert(wishlist) else update(wishlist)
+    override fun save(wishlist: Wishlist): Wishlist =
+        if (wishlist.id == null) insert(wishlist) else update(wishlist)
+
+    private fun insert(wishlist: Wishlist): Wishlist {
+        val wishlistId = WishlistId(
+            create.insertInto(WISHLISTS)
+                .set(WISHLISTS.OWNER_ID, wishlist.ownerId.value)
+                .returningResult(WISHLISTS.ID)
+                .fetchSingle().value1()
+        )
+        wishlist.items.forEach { addItem(wishlistId, it) }
+        return requireNotNull(findById(wishlistId))
     }
 
     private fun update(wishlist: Wishlist): Wishlist {
-        if (findById(wishlist.id!!) == null) throw IllegalStateException("Wishlist with ${wishlist.id} doesnt exist")
-        val items = getItems(wishlist.id)
-        if (items != wishlist.items) {
-            create.deleteFrom(WISHLIST_ITEMS)
-                .where(WISHLIST_ITEMS.WISHLIST_ID.eq(wishlist.id.value))
-                .execute()
-            val addedItems = mutableListOf<WishlistItem>()
-            wishlist.items.forEach {
-                val id = create.insertInto(WISHLIST_ITEMS)
-                    .set(WISHLIST_ITEMS.NAME, it.name)
-                    .set(WISHLIST_ITEMS.DESCRIPTION, it.description)
-                    .set(WISHLIST_ITEMS.LINK, it.link)
-                    .set(WISHLIST_ITEMS.WISHLIST_ID, wishlist.id.value)
-                    .returningResult(WISHLIST_ITEMS.ID)
-                    .fetchSingle().value1()
-                addedItems.add(
-                    WishlistItem(
-                        id = WishlistItemId(id),
-                        name = it.name,
-                        description = it.description,
-                        link = it.link
-                    )
-                )
+        val id = requireNotNull(wishlist.id)
+        val old = getItems(id)
+        val oldIds = old.mapNotNull { it.id }.toSet()
+        val newIds = wishlist.items.mapNotNull { it.id }.toSet()
+        require(newIds.all { it in oldIds }) { "wishlist contains an item from another wishlist" }
+        old.filter { it.id !in newIds }.forEach { deleteItem(id, requireNotNull(it.id)) }
+        wishlist.items.forEach { item ->
+            if (item.id == null) {
+                addItem(id, item)
+            } else {
+                val previous = old.first { it.id == item.id }
+                if (previous.name != item.name || previous.description != item.description || previous.link != item.link) {
+                    updateItem(id, item)
+                }
             }
-            return Wishlist(
-                id = wishlist.id,
-                ownerId = wishlist.ownerId,
-                items = addedItems,
-            )
         }
-
-        return Wishlist(
-            id = wishlist.id,
-            ownerId = wishlist.ownerId,
-            items = items,
-        )
+        return requireNotNull(findById(id))
     }
 
-    private fun insert(wishlist: Wishlist): Wishlist {
-        val id = create.insertInto(WISHLISTS)
-            .set(WISHLISTS.OWNER_ID, wishlist.ownerId.value)
-            .returningResult(WISHLISTS.ID)
-            .fetchSingle()
-            .value1()
-        val addedItems = mutableListOf<WishlistItem>()
-        wishlist.items.forEach {
-            val id = create.insertInto(WISHLIST_ITEMS)
-                .set(WISHLIST_ITEMS.NAME, it.name)
-                .set(WISHLIST_ITEMS.DESCRIPTION, it.description)
-                .set(WISHLIST_ITEMS.LINK, it.link)
-                .set(WISHLIST_ITEMS.WISHLIST_ID, id)
-                .returningResult(WISHLIST_ITEMS.ID)
-                .fetchSingle().value1()
-            addedItems.add(
-                WishlistItem(
-                    id = WishlistItemId(id),
-                    name = it.name,
-                    description = it.description,
-                    link = it.link
-                )
-            )
-        }
-        return Wishlist(
-            id = WishlistId(id),
-            ownerId = wishlist.ownerId,
-            items = addedItems,
-        )
-    }
-
-    override fun deleteById(id: WishlistId): Boolean = create
-        .deleteFrom(WISHLISTS)
-        .where(WISHLISTS.ID.eq(id.value))
-        .execute() == 1
+    override fun deleteById(id: WishlistId): Boolean =
+        create.deleteFrom(WISHLISTS).where(WISHLISTS.ID.eq(id.value)).execute() == 1
 
     private fun getItems(wishlistId: WishlistId): List<WishlistItem> =
         create.selectFrom(WISHLIST_ITEMS)
             .where(WISHLIST_ITEMS.WISHLIST_ID.eq(wishlistId.value))
-            .fetch(WishlistItemsRecord::toDomain)
+            .orderBy(WISHLIST_ITEMS.ID.asc())
+            .fetch { it.toDomain() }
 }

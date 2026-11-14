@@ -2,10 +2,14 @@ package ru.nikzarch.secretsanta.repository
 
 import ru.nikzarch.secretsanta.domain.Wishlist
 import ru.nikzarch.secretsanta.domain.WishlistItem
-import ru.nikzarch.secretsanta.domain.vo.*
+import ru.nikzarch.secretsanta.domain.vo.UserId
+import ru.nikzarch.secretsanta.domain.vo.WishlistId
+import ru.nikzarch.secretsanta.domain.vo.WishlistItemId
 
 interface WishlistRepository {
     fun addItem(wishlistId: WishlistId, item: WishlistItem): WishlistItem
+    fun updateItem(wishlistId: WishlistId, item: WishlistItem): WishlistItem
+    fun deleteItem(wishlistId: WishlistId, itemId: WishlistItemId): Boolean
     fun findById(id: WishlistId): Wishlist?
     fun findByOwnerId(ownerId: UserId): Wishlist?
     fun save(wishlist: Wishlist): Wishlist
